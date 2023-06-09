@@ -22,7 +22,7 @@ export default function Login() {
             type="password"
             placeholder="Password"
           />
-          <button className="text-2xl font-bold bg-blue-primary text-white w-full h-20 rounded-lg mt-12">
+          <button className="button-primary h-20 text-2xl font-bold w-full mt-12">
             Đăng nhập
           </button>
         </div>

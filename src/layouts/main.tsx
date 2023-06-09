@@ -9,7 +9,7 @@ export default function Dashboard() {
         <Header />
         <Sidebar />
       </div>
-      <div className="h-full ml-56 bg-grey">
+      <div className="h-full ml-56 pt-20 bg-grey">
         <Outlet />
       </div>
     </div>
