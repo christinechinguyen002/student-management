@@ -21,3 +21,7 @@
 .form-container {
   @apply bg-white mt-8 p-11 rounded-md flex flex-col space-y-9;
 }
+
+.active-tab {
+  @apply font-bold text-blue-primary;
+}

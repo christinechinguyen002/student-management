@@ -1,5 +1,5 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, matchPath, useLocation } from "react-router-dom";
 
 export default function Sidebar() {
   const sidebarRoutes = [
@@ -25,10 +25,34 @@ export default function Sidebar() {
     },
   ];
 
+  const location = useLocation();
+
+  const [activeTab, setActiveTab] = useState<string>(
+    sidebarRoutes.filter((item) => location.pathname.includes(item.route))[0]
+      .route
+  );
+
+  useEffect(() => {
+    if (!location.pathname.includes(activeTab)) {
+      setActiveTab(
+        sidebarRoutes.filter((item) =>
+          location.pathname.includes(item.route)
+        )[0].route
+      );
+    }
+  }, [location]);
+
   return (
     <div className="flex flex-col">
       {sidebarRoutes.map((item, idx) => (
-        <Link to={item.route} key={idx} className="w-full h-12 pl-4 text-lg flex items-center">
+        <Link
+          to={item.route}
+          key={idx}
+          className={`${
+            activeTab === item.route ? "active-tab " : ""
+          }w-full h-12 pl-4 text-lg flex items-center`}
+          onClick={() => setActiveTab(item.route)}
+        >
           {item.title}
         </Link>
       ))}
