@@ -14,7 +14,7 @@ export default function Transcript() {
   const [formValue, setFormValue] = useState({
     class: "all",
     subject: "all",
-    semester: "1",
+    semester: 1,
     year: "all",
   });
   let classID: string[] = [];
@@ -72,58 +72,53 @@ export default function Transcript() {
   function onClickSubmitFilter() {
     (async () => {
       const collectionRef = collection(db, "student");
-      const q = query(collectionRef);
       const q2 = query(collection(db, "score"));
 
       const selectedClassID = classDataArray.find(
         (item) =>
           item.ClassName === formValue.class && item.Year === formValue.year
       );
-      console.log(selectedClassID);
-      
-      const q3 = query(collectionRef, where("ClassID", "==", selectedClassID.ID));
+      const q3 = query(
+        collectionRef,
+        where("ClassID", "==", selectedClassID.ID)
+      );
       const studentFilteredByClass = (await getDocs(q3)).docs.map((doc) =>
         doc.data()
       );
-      console.log("student filter", studentFilteredByClass);
 
       const scoreSnap = (await getDocs(q2)).docs.map((doc) => doc.data());
-      const studentSnap = (await getDocs(q)).docs.map((doc) => doc.data());
 
-      const enrichedStudentSnap = studentSnap.reduce((acc, student) => {
-        console.log("student", student);
+      const enrichedStudentSnap = studentFilteredByClass.reduce(
+        (acc, student) => {
+          const matchingScores = scoreSnap.filter(
+            (score) =>
+              score.IDHS === student.ID &&
+              score.IDMon === formValue.subject &&
+              score.HocKy === formValue.semester
+          );
 
-        const matchingScores = scoreSnap.filter(
-          (score) =>
-            score.IDHS === student.ID &&
-            score.IDMon === formValue.subject &&
-            score.HocKy === formValue.semester
-        );
+          const { ID, ...rest } = student;
+          const enrichedStudent = {
+            ...rest,
+            Diem15phut: matchingScores[0]?.Diem15phut,
+            Diem1tiet: matchingScores[0]?.Diem1tiet,
+            DTBHK: matchingScores[0]?.DTBHK,
+          };
 
-        console.log("matching scores", matchingScores);
-
-        const { ID, ...rest } = student;
-        const enrichedStudent = {
-          ...rest,
-        };
-        console.log("enriched", enrichedStudent);
-
-        acc.push(enrichedStudent);
-        return acc;
-      }, []);
+          acc.push(enrichedStudent);
+          return acc;
+        },
+        []
+      );
       setFilteredData(enrichedStudentSnap as any[]);
     })();
   }
 
   useEffect(() => {
     if (isMounted.current) {
-      // This code will run on subsequent renders after the initial mount
-      // Put your logic here that you want to execute after the initial mount
-      // ...
       fetchClass();
       fetchSubject();
     } else {
-      // This code will run only on the initial mount
       isMounted.current = true;
     }
   }, []);
@@ -152,7 +147,7 @@ export default function Transcript() {
             ))
         : []
     );
-  }, [formValue.class]);
+  }, [classDataArray, formValue.class]);
 
   return (
     <div className="p-12">
@@ -213,13 +208,16 @@ export default function Transcript() {
               <Form.Select
                 aria-label="Học kì"
                 className="w-[5.5rem] h-10 focus-visible:outline-none"
-                value={formValue.subject}
+                value={formValue.semester}
                 onChange={(event) =>
-                  setFormValue({ ...formValue, semester: event.target.value })
+                  setFormValue({
+                    ...formValue,
+                    semester: Number(event.target.value),
+                  })
                 }
               >
-                <option value="1">I</option>
-                <option value="2">II</option>
+                <option value={1}>I</option>
+                <option value={2}>II</option>
               </Form.Select>
             </div>
           </div>
@@ -240,7 +238,7 @@ export default function Transcript() {
             </div>
           </div>
           <button
-            className="button-primary w-full h-10 px-5 whitespace-nowrap disabled:bg-gray-500"
+            className="button-primary w-fit h-10 px-5 whitespace-nowrap"
             onClick={onClickSubmitFilter}
             disabled={
               formValue.class === "all" ||
@@ -267,9 +265,9 @@ export default function Transcript() {
                 <tr key={idx} className="h-10">
                   <td className="border">{idx + 1}</td>
                   <td className="border">{student.Name}</td>
-                  <td className="border">{student.test15min}</td>
-                  <td className="border">{student.test45min}</td>
-                  <td className="border">{student.avScore}</td>
+                  <td className="border">{student?.Diem15phut}</td>
+                  <td className="border">{student?.Diem1tiet}</td>
+                  <td className="border">{student?.DTBHK}</td>
                 </tr>
               ))}
             </tbody>

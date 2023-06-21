@@ -110,13 +110,9 @@ export default function ClassList() {
 
   useEffect(() => {
     if (isMounted.current) {
-      // This code will run on subsequent renders after the initial mount
-      // Put your logic here that you want to execute after the initial mount
-      // ...
       fetchClass();
       fetchStudentData();
     } else {
-      // This code will run only on the initial mount
       isMounted.current = true;
     }
   }, []);
@@ -191,7 +187,7 @@ export default function ClassList() {
             </div>
           </div>
           <button
-            className="button-primary w-fit h-10 px-5 disabled:bg-gray-500"
+            className="button-primary w-fit h-10 px-5"
             disabled={formValue.class === "all" || formValue.year === "all"}
             onClick={onClickSubmitFilter}
           >

@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import { Form } from "react-bootstrap";
+import { toast, ToastContainer } from "react-toastify";
 import db from "../firebase";
 
 export default function FindStudent() {
@@ -136,65 +137,23 @@ export default function FindStudent() {
     } else {
       setFilteredData(enrichedStudentSnap as any[]);
     }
+
+    if (
+      enrichedStudentSnap.length === 0 ||
+      enrichedStudentSnap.filter((item: any) =>
+        item.Name.includes(formValue.name)
+      ).length === 0
+    ) {
+      toast.warn("Không tìm thấy học sinh!", {
+        position: toast.POSITION.TOP_CENTER,
+      });
+    }
   };
 
   useEffect(() => {
     if (isMounted.current) {
-      // This code will run on subsequent renders after the initial mount
-      // Put your logic here that you want to execute after the initial mount
-      // ...
       fetchClass();
-
-      (async () => {
-        const collectionRef = collection(db, "student");
-
-        const q = query(collectionRef);
-        const q2 = query(collection(db, "score"));
-
-        const scoreSnap = (await getDocs(q2)).docs.map((doc) => doc.data());
-        const studentSnap = (await getDocs(q)).docs.map((doc) => doc.data());
-
-        const scoreMap = scoreSnap.reduce((acc, score) => {
-          const key = `${score.IDHS}_${score.HocKy}`;
-          if (acc.hasOwnProperty(key)) {
-            acc[key].push(score.DTBHK);
-          } else {
-            acc[key] = [score.DTBHK];
-          }
-          return acc;
-        }, {});
-
-        const enrichedStudentSnap = studentSnap.reduce((acc, student) => {
-          const key1 = `${student.ID}_1`;
-          const key2 = `${student.ID}_2`;
-
-          const scores1 = scoreMap[key1];
-          const scores2 = scoreMap[key2];
-
-          const averageScore1 = scores1
-            ? scores1.reduce((sum: any, score: any) => sum + score, 0) /
-              scores1.length
-            : null;
-          const averageScore2 = scores2
-            ? scores2.reduce((sum: any, score: any) => sum + score, 0) /
-              scores2.length
-            : null;
-
-          const { IDHS, HocKy, ...rest } = student;
-          const enrichedStudent = {
-            ...rest,
-            AverageScore1: averageScore1,
-            AverageScore2: averageScore2,
-          };
-          acc.push(enrichedStudent);
-
-          return acc;
-        }, []);
-
-        setFilteredData(enrichedStudentSnap as any[]);
-      })();
     } else {
-      // This code will run only on the initial mount
       isMounted.current = true;
     }
   }, []);
@@ -212,6 +171,7 @@ export default function FindStudent() {
 
   return (
     <div className="p-12">
+      <ToastContainer />
       <div className="form-title">Tra cứu học sinh</div>
       <div className="form-container">
         <div className="flex items-center space-x-11">
@@ -247,8 +207,9 @@ export default function FindStudent() {
             />
           </div>
           <button
-            className="button-primary w-fit h-10 px-5 disabled:bg-gray-500"
+            className="button-primary w-fit h-10 px-5"
             onClick={onClickSubmitFilter}
+            disabled={formValue.year === "all"}
           >
             Tìm kiếm
           </button>

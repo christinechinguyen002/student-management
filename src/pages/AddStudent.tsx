@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { Form } from "react-bootstrap";
 import db from "../firebase";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AddStudent() {
   const [formValue, setFormValue] = useState({
     Name: "",
     DoB: "",
-    Gender: "",
+    Gender: "Nam",
     Address: "",
     Email: "",
   });
@@ -27,8 +29,14 @@ export default function AddStudent() {
             Address: "",
             Email: "",
           });
+          toast.success("Thêm học sinh thành công!", {
+            position: toast.POSITION.TOP_CENTER,
+          });
         } catch (error) {
           console.error("Error adding document: ", error);
+          toast.error("Thêm học sinh thất bại! Vui lòng thử lại.", {
+            position: toast.POSITION.TOP_CENTER,
+          });
         }
       })();
     }
@@ -36,6 +44,7 @@ export default function AddStudent() {
 
   return (
     <div className="p-12">
+      <ToastContainer />
       <div className="form-title">Tiếp nhận học sinh</div>
       <div className="form-container">
         <div className="flex items-center">

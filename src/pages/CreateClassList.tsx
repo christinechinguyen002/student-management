@@ -1,4 +1,10 @@
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  updateDoc,
+} from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
 import { Form, InputGroup } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -8,32 +14,18 @@ import db from "../firebase";
 export default function CreateClassList() {
   const navigate = useNavigate();
 
-  const data = [
-    {
-      name: "Latte",
-      gender: "female",
-      birthYear: 2000,
-      address: "abc Town",
-    },
-    {
-      name: "Latte",
-      gender: "female",
-      birthYear: 2000,
-      address: "abc Town",
-    },
-    {
-      name: "Latte",
-      gender: "female",
-      birthYear: 2000,
-      address: "abc Town",
-    },
-  ];
-
   const [formValue, setFormValue] = useState({
     class: "all",
     year: "all",
   });
   let classID: string[] = [];
+  const [classNames, setClassNames] = useState<string[]>([]);
+  let studentID: string[] = [];
+  const [studentDataArray, setStudentDataArray] = useState<any[]>([]);
+  const [classDataArray, setClassDataArray] = useState<any[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const isMounted = useRef(false);
 
   function fetchClass() {
     (async () => {
@@ -56,6 +48,34 @@ export default function CreateClassList() {
     })();
   }
 
+  function fetchStudentData() {
+    (async () => {
+      const collectionRef = collection(db, "student");
+      const snapshot = await getDocs(collectionRef);
+
+      snapshot.forEach((doc: any) => {
+        if (!studentID.includes(doc.id)) {
+          studentID.push(doc.id);
+        }
+      });
+
+      studentID.map(async (id) => {
+        const docRef = doc(db, "student", id);
+        const docSnap = await getDoc(docRef);
+        if (
+          docSnap.data() &&
+          !studentDataArray.includes({ ...docSnap.data(), docID: id }) &&
+          docSnap.data()?.ClassID === undefined
+        ) {
+          setStudentDataArray((prevArray) => [
+            { ...docSnap.data(), docID: id },
+            ...prevArray,
+          ]);
+        }
+      });
+    })();
+  }
+
   const handleSelectChange = (
     sender: "class" | "year",
     event: React.ChangeEvent<HTMLSelectElement>
@@ -70,48 +90,85 @@ export default function CreateClassList() {
     }
   };
 
-  const [uniqueClassNames, setUniqueClassNames] = useState<string[]>([]);
-  const [classDataArray, setClassDataArray] = useState<any[]>([]);
-  const [yearsToDisplay, setYearsToDisplay] = useState<any[]>([]);
-  const isMounted = useRef(false);
+  const handleCheckboxChange = (event: any, docID: any) => {
+    if (event.target.checked) {
+      setSelectedStudents((prevSelectedStudents) => [
+        ...prevSelectedStudents,
+        docID,
+      ]);
+    } else {
+      setSelectedStudents((prevSelectedStudents) =>
+        prevSelectedStudents.filter((id) => id !== docID)
+      );
+      setSelectAll(false);
+    }
+  };
+
+  const handleSelectAllChange = (event: any) => {
+    setSelectAll(event.target.checked);
+    if (event.target.checked) {
+      const docIDs = studentDataArray.map((student) => student.docID);
+      setSelectedStudents(docIDs);
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
+  const handleAddToClass = () => {
+    selectedStudents.forEach((studentID) => {
+      addFieldToDocument(studentID, formValue.class);
+    });
+    setSelectedStudents([]);
+  };
+
+  function useForceUpdate() {
+    const [value, setValue] = useState(0);
+    return () => setValue((value) => value + 1);
+  }
+
+  const forceUpdate = useForceUpdate();
 
   useEffect(() => {
     if (isMounted.current) {
-      // This code will run on subsequent renders after the initial mount
-      // Put your logic here that you want to execute after the initial mount
-      // ...
       fetchClass();
+      fetchStudentData();
     } else {
-      // This code will run only on the initial mount
       isMounted.current = true;
     }
   }, []);
 
   useEffect(() => {
-    const classNames = classDataArray.map((item) => item.ClassName);
-    const uniqueClassNames = classNames.filter(
-      (className, index) => classNames.indexOf(className) === index
+    setClassNames(
+      classDataArray
+        .filter((item) => item.Year === "2022 - 2023")
+        .map((item) => item.ClassName)
     );
-    setUniqueClassNames(uniqueClassNames);
   }, [classDataArray]);
 
-  useEffect(() => {
-    const selectedClass = classDataArray.find(
-      (item) => item.ClassName === formValue.class
-    );
+  const addFieldToDocument = async (documentId: string, className: string) => {
+    const documentRef = doc(db, "student", documentId);
 
-    setYearsToDisplay(
-      selectedClass
-        ? classDataArray
-            .filter((item) => item.ClassName === selectedClass.ClassName)
-            .map((classItem, idx) => (
-              <option key={idx} value={classItem.Year}>
-                {classItem.Year}
-              </option>
-            ))
-        : []
-    );
-  }, [formValue.class]);
+    try {
+      // Retrieve the existing document data
+      const documentSnapshot = await getDoc(documentRef);
+      if (documentSnapshot.exists()) {
+        // Update the document with the new field
+        const updatedData = {
+          ...documentSnapshot.data(),
+          ClassID: `${className}_22_23`,
+        };
+
+        // Save the updated document to Firestore
+        await updateDoc(documentRef, updatedData);
+
+        console.log("Field added successfully!");
+      } else {
+        console.log("Document not found!");
+      }
+    } catch (error) {
+      console.error("Error adding field to document:", error);
+    }
+  };
 
   return (
     <div className="p-12">
@@ -138,7 +195,7 @@ export default function CreateClassList() {
                 }
               >
                 <option value="all">Chọn lớp</option>
-                {uniqueClassNames.map((className, idx) => {
+                {classNames.map((className, idx) => {
                   const classItem = classDataArray.find(
                     (item) => item.ClassName === className
                   );
@@ -160,27 +217,24 @@ export default function CreateClassList() {
               <Form.Select
                 aria-label="Niên khóa"
                 className="w-44 h-10 focus-visible:outline-none"
-                value={formValue.year}
-                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-                  handleSelectChange("year", event)
-                }
+                disabled
               >
-                <option value="all">Chọn niên khóa</option>
-                {yearsToDisplay}
+                <option value="2022 - 2023">2022 - 2023</option>
               </Form.Select>
             </div>
           </div>
-          <button className="green-button-primary w-fit h-10 px-5">
-            Lập danh sách
-          </button>
         </div>
-        {data.length > 0 && (
+        {studentDataArray.length > 0 && (
           <>
             <table className="table-auto text-center border border-collapse">
               <thead>
                 <tr className="font-bold h-10">
                   <td className="border">
-                    <InputGroup.Checkbox aria-label="Checkbox for following text input" />
+                    <InputGroup.Checkbox
+                      aria-label="Checkbox for following text input"
+                      onChange={handleSelectAllChange}
+                      checked={selectAll}
+                    />
                   </td>
                   <td className="border">STT</td>
                   <td className="border">Họ và tên</td>
@@ -190,21 +244,36 @@ export default function CreateClassList() {
                 </tr>
               </thead>
               <tbody>
-                {data.map((student, idx) => (
+                {studentDataArray.map((student, idx) => (
                   <tr key={idx} className="h-10">
                     <td className="border">
-                      <InputGroup.Checkbox aria-label="Checkbox for following text input" />
+                      <InputGroup.Checkbox
+                        aria-label="Checkbox for following text input"
+                        checked={
+                          selectedStudents.includes(student.docID) || selectAll
+                        }
+                        onChange={(event: any) =>
+                          handleCheckboxChange(event, student.docID)
+                        }
+                      />
                     </td>
                     <td className="border">{idx + 1}</td>
-                    <td className="border">{student.name}</td>
-                    <td className="border">{student.gender}</td>
-                    <td className="border">{student.birthYear}</td>
-                    <td className="border">{student.address}</td>
+                    <td className="border">{student.Name}</td>
+                    <td className="border">{student.Gender}</td>
+                    <td className="border">{student.DoB}</td>
+                    <td className="border">{student.Address}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button className="button-primary w-fit px-6 py-3">
+            <button
+              className="button-primary w-fit px-6 py-3"
+              disabled={formValue.class === "all"}
+              onClick={() => {
+                handleAddToClass();
+                forceUpdate();
+              }}
+            >
               Thêm học sinh
             </button>
           </>

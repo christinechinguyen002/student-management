@@ -7,7 +7,7 @@
 }
 
 .button-primary {
-  @apply bg-blue-primary text-white rounded-lg;
+  @apply bg-blue-primary text-white rounded-lg disabled:bg-gray-500;
 }
 
 .green-button-primary {
