@@ -7,54 +7,51 @@ import FinalReport from "./pages/FinalReport";
 import FindStudent from "./pages/FindStudent";
 import Login from "./pages/Login";
 import Transcript from "./pages/Transcript";
+import LandingPage from "./pages/LandingPage";
+import RequireAuth from "./components/RequireAuth";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: (
-      <div>
-        <Outlet />
-      </div>
-    ),
+    element: <LandingPage />,
+  },
+  {
+    path: "login",
+    element: <Login />,
+  },
+  {
+    path: "dashboard",
+    element: <RequireAuth><Dashboard /></RequireAuth>,
     children: [
+      { index: true, element: <AddStudent /> },
       {
-        path: "login",
-        element: <Login />,
+        path: "add-student",
+        element: <AddStudent />,
       },
       {
-        path: "dashboard",
-        element: <Dashboard />,
+        path: "class-list",
         children: [
           {
-            path: "add-student",
-            element: <AddStudent />,
+            path: "create-class-list",
+            element: <CreateClassList />,
           },
           {
-            path: "class-list",
-            children: [
-              {
-                path: "create-class-list",
-                element: <CreateClassList />,
-              },
-              {
-                path: "",
-                element: <ClassList />,
-              },
-            ],
-          },
-          {
-            path: "find-student",
-            element: <FindStudent />,
-          },
-          {
-            path: "transcript",
-            element: <Transcript />,
-          },
-          {
-            path: "final-report",
-            element: <FinalReport />,
+            path: "",
+            element: <ClassList />,
           },
         ],
+      },
+      {
+        path: "find-student",
+        element: <FindStudent />,
+      },
+      {
+        path: "transcript",
+        element: <Transcript />,
+      },
+      {
+        path: "final-report",
+        element: <FinalReport />,
       },
     ],
   },
